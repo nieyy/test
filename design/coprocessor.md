@@ -46,7 +46,9 @@ The following constraints need to be considered when designing our architecture:
 - Storage engines may need to know how to encode/decode binary key-value data with database metadata information in order to do further computations, also storage engines may be written in different programming languages, like **golang**, **java** and etc.
 - TiDB's SQL layer needs to be able to check the coprocessor capabilities of the underlying storage engines, and can generate optimized execution plans accordingly once storage engine provides a fast path.
 
+Here below is the architecture to support ***Coprocessor*** feature:
 
+![Architecture](coprocessor_architecture.png)
 
 # KV Interface Changes
 
