@@ -61,7 +61,7 @@ Actually, the noun `capability` could be more general, and this change is not on
 
 In `tidb/kv/kv.go`:
 
-```
+```Go
 // EnumFeatureName defines the feature name supported by the storage layer, which
 // can be used as by the SQL layer for optimized plan generation or other purposes.
 type EnumFeatureName int
@@ -85,9 +85,20 @@ type Feature interface {
 
 ## Methods to Deliever Metadata Information
 
-To be added.
+In `tidb/kv/kv.go`:
+
+```Go
+// Coprocessor is the interface wraps all its related methods.
+type Coprocessor interface {
+	// PushDown delivers all metadata information needed for a specified coprocessor
+	// feature to perform computation in the underlying storage layer.
+	PushDown(name EnumFeatureName, metadata interface{})
+}
+```
 
 # SQL Push Down Workflow
+
+To be added.
 
 # Implementation Details
 
@@ -95,16 +106,33 @@ To be added.
 
 We need to seperate the code to encode/decode raw binary data with metadata information to an independent library because:
 
-- Storage layers need to depend on this library, if it's not independent, recursive dependencies can occur
-- The underlying storage layer may be implemented in multiple languages, 
+- Storage layers need to depend on this library, if it's not independent, recursive dependencies can occur.
+- The underlying storage layer may be implemented in multiple languages, not Golang only, so it's better to make this function part independent.
+
+Back to the implementation, we will:
+
+- Use Google protobuf for metadata encoding/decoding to shield language differences.
+- `Golang`/`Java`/`C++` version for this library can be implemented first.
 
 ## Dual-Path Execution Plan Generation
 
-To be added.
+As mentioned above,, TiDB's SQL layer can't assume the functionalies of the underlying storage layer, of course it needs to be transactional KV storage, while ***Coprocessor*** should be classfied as optional features, our `Planner/Optimizer` should be able to generate optimized plans accordingly, that is so called ***Dual-Path***.
 
-## New Coprocessor Plugin Support
+Back to the implementation, we will:
 
-To be added.
+- If a specified coprocesor feature is supported, the optimized execution path can be choosed, and metadata information needed by the underlying storage layer can be encapsulated and push down.
+- Similar to online schema change, to support online KV storage upgrade, we can detect and refresh the feature list every several minutes, if a new feature is enabled after online upgradation, we can use it without restart the SQL layer.
+
+## New Coprocessor Module Support
+
+As we all know, if the underlying storage layer supports ***Coprocessor*** feature, like **HBase**, it usually means an extensible framework and some pre-existed modules, new functions usually means to support new modules.
+
+From the implementation perspective, new coprocessor module support means the following steps:
+
+- Use the mechanism provided by the storage layer to implement a module, and load it.
+- Assign a new feature name for this module, e.g., `FeatureNameCoprocessorInnerJoin`.
+- Modify the `Planner/Optimizer` of the SQL layer to add another optimized exeuction path for the new feature.
+- Update the storage wrapper to return `true` for this feature.
 
 # References
 
