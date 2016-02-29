@@ -100,7 +100,9 @@ type Coprocessor interface {
 
 # SQL Push Down Workflow
 
-To be added.
+To support ***Coprocessor*** feature, TiDB's SQL layer needs to modify its `Planner/Optimizer` and `Executor` component, the general SQL push down workflow can be explained by the diagram below:
+
+![Workflow](coprocessor_workflow.png)
 
 # Implementation Details
 
